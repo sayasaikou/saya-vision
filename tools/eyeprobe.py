@@ -3,7 +3,7 @@
 """
 eyeprobe.py -- multi-backend vision cross-check probe (大肥鱼的"审讯"工具)
 
-为什么存在：单个视觉模型答一次就下结论，是本鱼踩过最多的坑。
+为什么存在：单个视觉模型答一次就下结论，是最常见的失败模式。
 本工具做三件事：
   1) 分块：把长图切成上/中/下，逐块问同一个问题（细节召回靠放大，不靠祈祷）
   2) 多后端：同一问题问多个模型，各自独立作答
@@ -57,7 +57,7 @@ BACKENDS = {
         "url": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
         "model": "qwen3.5-omni-plus",
         "keyenv": "DASHSCOPE_API_KEY",
-        "note": "阿里百炼 omni。⚠️ 2026-10-03 三轮实测（22 项真值）："
+        "note": "阿里百炼 omni。注意： 2026-10-03 三轮实测（22 项真值）："
                 "omni 59.1 / 59.1 / 54.5，vl-plus 50.0 / 54.5 / 59.1 —— "
                 "**两者合计基本持平，谈不上谁更强**（早先只看两轮就下了'omni 更强'的结论，"
                 "第三轮就翻了）。但方向是稳定的：omni 在 ref-b（干活形态）上 88/100/75，"
@@ -69,12 +69,12 @@ BACKENDS = {
         # 只有 DASHSCOPE_API_KEY 与 ZAI_API_KEY）—— 没有 keyenv 时 available_models()
         # 会自动跳过，所以现在挂着不影响任何流程，拿到 Key 就能用。
         #
-        # ⚠️ 拿到 Key 后要先确认两件事（方舟账号之间不一样）：
+        # 注意： 拿到 Key 后要先确认两件事（方舟账号之间不一样）：
         #   1) model 到底填**模型名**还是**推理接入点 ID**（形如 ep-2026xxxx）——
         #      有的账号必须用后者，填错会报 model not found；
         #   2) 该账号有没有开通这个模型（控制台 → 开通管理）。
         # 依据：SuperCLUE-VLM 2026-04 中文多模态榜，字节 Doubao-Seed-2.0-Pro 以 90.66
-        # 分列总榜第一（超 Gemini-3.1-Pro 89.35）。⚠️ 但那份榜测的是通用识别/图表/
+        # 分列总榜第一（超 Gemini-3.1-Pro 89.35）。注意： 但那份榜测的是通用识别/图表/
         # 医疗影像，**不含"看服装细节"**，所以对我们要先实测再信（判据：换模型必过真值集）。
         "url": "https://ark.cn-beijing.volces.com/api/v3/chat/completions",
         "model": "doubao-seed-2-0-pro-260215",
@@ -172,7 +172,7 @@ def slice_vertical(path, n):
 def collapse_repeats(text, max_keep=2):
     """折叠模型的**复读崩溃**。返回 (清理后的文本, 重复次数)；没复读就原样返回、次数 0。
 
-    2026-10-03 实测（饲主当场抓的）：ollama 在一张 8 MP 立绘上把
+    2026-10-03 实测（实测发现）：ollama 在一张 8 MP 立绘上把
     「角色的腿部有红色的蝴蝶结装饰。」连着吐了 **24 遍** —— 而流水线**把它当正常内容收了**：
     原样进报告的"原始回答"，还在分歧检测里被归成一个条目（"重复蝴蝶结列举，共 29 次"）。
     ⇒ **复读不是描述，是故障。** 它最坏的地方不是难看，是让"多模型交叉"里凭空多出一个
@@ -186,7 +186,7 @@ def collapse_repeats(text, max_keep=2):
     if len(lines) < 6:
         return s, 0
     # 剥掉行首编号/项目符号再比 —— 否则「10. 同一句话」和「11. 同一句话」会被当成两行，
-    # 而模型复读时经常是一边吐一边加序号（本鱼第一版就漏了这种情况）。
+    # 而模型复读时经常是一边吐一边加序号（第一版实现漏了这种情况）。
     def _key(l):
         return re.sub(r'^\s*(?:[-*•]|\d+[.、)）])\s*', '', l)
     keys = [_key(l) for l in lines]
